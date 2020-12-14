@@ -5,7 +5,8 @@ using System.Web;
 
 namespace webMVCwith_bd.Models
 {
-    public class Genero
+    public enum Genero
     {
+        Masculino,Feminino
     }
 }
