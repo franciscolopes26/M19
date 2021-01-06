@@ -29,16 +29,17 @@ namespace WebMVC.Models
         {
             try
             {
-                string connectionInfo = "datasouce=" + host + ";port=" + porta + ";username=" + utilizador + ";password=" + password + ";database" + bd + ";SslMode=none";
+                string connectionInfo = "datasource=" + host + ";port=" + porta + ";username=" + utilizador + ";password=" + password + ";database=" + bd + ";SslMode=none";
                 conn = new MySqlConnection(connectionInfo);
                 conn.Open();
                 Console.WriteLine(conn);
                 return conn;
-
+                 
                 
             }
             catch(Exception ex)
             {
+                Console.WriteLine(conn);
                 System.Diagnostics.Debug.WriteLine(ex.StackTrace);
             }
             return null;
