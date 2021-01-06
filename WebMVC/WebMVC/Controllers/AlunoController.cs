@@ -59,6 +59,94 @@ namespace WebMVC.Controllers
             return RedirectToAction("CriaAluno");
         }
 
+        public ActionResult ListarAluno()
+        {
+            ConexaoBD Conn = new ConexaoBD("localhost", 3307, "root", "root", "formacao");
+            List<aluno> lista = new List<aluno>();
+            using(MySqlConnection conexao= Conn.ObterConexao())
+            {
+                if (conexao != null)
+                    using (MySqlCommand cmd = new MySqlCommand("select * from alunos", conexao))
+                    {
+                        using (MySqlDataReader reader = cmd.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                lista.Add(new aluno()
+                                {
+                                Naluno = reader.GetInt32("idAlunos"),
+                                PriNome = reader.GetString("nome"),
+                                UltNome = reader.GetString("ultimo_nome"),
+                                Morada = reader.GetString("morada"),
+                                Genero = reader.GetString("genero") == "Masculino" ? Genero.Masculino : Genero.Feminino,
+                                DataNasc = reader.GetDateTime("datanasc"),
+                                AnoEscolaridade = reader.GetInt16("ano_escolaridade"),
+
+                                });
+                            }
+
+                        }
+                              
+                           
+                     
+                    }
+            }
+
+            return View(lista);
+
+
+
+            
+        }
+
+        public ActionResult DetalheAluno(int id)
+        {
+            ConexaoBD Conn = new ConexaoBD("localhost", 3307, "root", "root", "formacao");
+            aluno Aluno = null;
+            using (MySqlConnection conexao = Conn.ObterConexao())
+            {
+                if(conexao!=null)
+                {
+                    using (MySqlCommand cmd = new MySqlCommand("select*from alunos where idalunos=@idalunos", conexao))
+                    {
+                        cmd.Parameters.AddWithValue("@idalunos", id);
+                        using(MySqlDataReader reader = cmd.ExecuteReader())
+                        {
+                            if (reader.Read())
+                            {
+                                Aluno = new aluno()
+                                {
+                                    Naluno = reader.GetInt32("idAlunos"),
+                                    PriNome = reader.GetString("nome"),
+                                    UltNome = reader.GetString("ultimo_nome"),
+                                    Morada = reader.GetString("morada"),
+                                    Genero = reader.GetString("genero") == "Masculino" ? Genero.Masculino : Genero.Feminino,
+                                    DataNasc = reader.GetDateTime("datanasc"),
+                                    AnoEscolaridade = reader.GetInt16("ano_escolaridade"),
+                                    ImgPath = reader.GetString("foto")
+                                };
+                                return View(Aluno);
+
+                            }
+                        }
+
+                    }
+
+
+
+
+                }
+
+
+
+
+            }
+            return RedirectToAction("ListarAluno");
+
+        }
+
+
+
     }
     
 }
