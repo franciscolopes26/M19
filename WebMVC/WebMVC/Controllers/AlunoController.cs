@@ -11,15 +11,46 @@ namespace WebMVC.Controllers
 {
     public class AlunoController : Controller
     {
-        // GET: Aluno
+        public ActionResult ListarAluno()
+        {
+            if (Session["Login"] == null) return RedirectToAction("Login", "Registo");
+            ConexaoBD Conn = new ConexaoBD("localhost", 3307, "root", "root", "formacao");
+            List<aluno> lista = new List<aluno>();
+            using (MySqlConnection conexao = Conn.ObterConexao())
+            {
+                if (conexao != null)
+                    using (MySqlCommand cmd = new MySqlCommand("select * from alunos", conexao))
+                    {
+                        using (MySqlDataReader reader = cmd.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                lista.Add(new aluno()
+                                {
+                                    Naluno = reader.GetInt32("idAlunos"),
+                                    PriNome = reader.GetString("nome"),
+                                    UltNome = reader.GetString("ultimo_nome"),
+                                    Morada = reader.GetString("morada"),
+                                    Genero = reader.GetString("genero") == "Masculino" ? Genero.Masculino : Genero.Feminino,
+                                    DataNasc = reader.GetDateTime("datanasc"),
+                                    AnoEscolaridade = reader.GetInt16("ano_escolaridade"),
+                                });
+                            }
+                        }
+                    }
+
+            }
+            return View(lista);
+        }
         public ActionResult CriaAluno()
         {
             return View();
         }
-        [HttpPost]
 
+        [HttpPost]
         public ActionResult CriaAluno(aluno aluno)
         {
+            if (Session["Login"] == null) return RedirectToAction("Login", "Registo");
             if (ModelState.IsValid)
             {
                 string ImagemNome = Path.GetFileNameWithoutExtension(aluno.imagem.FileName);
@@ -34,89 +65,45 @@ namespace WebMVC.Controllers
                 {
                     if (conexao != null)
                     {
-                        string stm = "insert into alunos values(0,@primeiroNome, @ultimoNome,@morada, @genero, @dataNasc, @ano, @foto)";
-                        
+                        string stm = "insert into alunos values(0, @primeiroNome, @ultimoNome, @morada, @genero, @dataNasc, @ano, @foto)";
                         using (MySqlCommand cmd = new MySqlCommand(stm, conexao))
                         {
                             cmd.Parameters.AddWithValue("@primeiroNome", aluno.PriNome);
                             cmd.Parameters.AddWithValue("@ultimoNome", aluno.UltNome);
                             cmd.Parameters.AddWithValue("@morada", aluno.Morada);
-                            cmd.Parameters.AddWithValue("@genero", aluno.Genero);
+                            cmd.Parameters.AddWithValue("@genero", aluno.Genero.ToString());
                             cmd.Parameters.AddWithValue("@dataNasc", aluno.DataNasc);
                             cmd.Parameters.AddWithValue("@ano", aluno.AnoEscolaridade);
                             cmd.Parameters.AddWithValue("@foto", aluno.ImgPath);
 
-                            int nRgistos = cmd.ExecuteNonQuery();
-
-
-
+                            int nRegistos = cmd.ExecuteNonQuery();
                         }
-
-
                     }
                 }
             }
-            return RedirectToAction("CriaAluno");
+
+            return RedirectToAction("ListarAluno");
         }
 
-        public ActionResult ListarAluno()
+        public ActionResult DetalheAluno(int? id)
         {
+            if (Session["Login"] == null) return RedirectToAction("Login", "Registo");
             ConexaoBD Conn = new ConexaoBD("localhost", 3307, "root", "root", "formacao");
-            List<aluno> lista = new List<aluno>();
-            using(MySqlConnection conexao= Conn.ObterConexao())
-            {
-                if (conexao != null)
-                    using (MySqlCommand cmd = new MySqlCommand("select * from alunos", conexao))
-                    {
-                        using (MySqlDataReader reader = cmd.ExecuteReader())
-                        {
-                            while (reader.Read())
-                            {
-                                lista.Add(new aluno()
-                                {
-                                Naluno = reader.GetInt32("idAlunos"),
-                                PriNome = reader.GetString("nome"),
-                                UltNome = reader.GetString("ultimo_nome"),
-                                Morada = reader.GetString("morada"),
-                                Genero = reader.GetString("genero") == "Masculino" ? Genero.Masculino : Genero.Feminino,
-                                DataNasc = reader.GetDateTime("datanasc"),
-                                AnoEscolaridade = reader.GetInt16("ano_escolaridade"),
-
-                                });
-                            }
-
-                        }
-                              
-                           
-                     
-                    }
-            }
-
-            return View(lista);
-
-
-
-            
-        }
-
-        public ActionResult DetalheAluno(int id)
-        {
-            ConexaoBD Conn = new ConexaoBD("localhost", 3307, "root", "root", "formacao");
-            aluno Aluno = null;
+            aluno aluno = null;
             using (MySqlConnection conexao = Conn.ObterConexao())
             {
-                if(conexao!=null)
-                {
-                    using (MySqlCommand cmd = new MySqlCommand("select*from alunos where idalunos=@idalunos", conexao))
+                if (conexao != null)
+                    using (MySqlCommand cmd = new MySqlCommand("select * from alunos where idalunos=@idaluno", conexao))
                     {
-                        cmd.Parameters.AddWithValue("@idalunos", id);
-                        using(MySqlDataReader reader = cmd.ExecuteReader())
+                        cmd.Parameters.AddWithValue("@idaluno", id);
+                        using (MySqlDataReader reader = cmd.ExecuteReader())
                         {
                             if (reader.Read())
                             {
-                                Aluno = new aluno()
+
+                                aluno = new aluno()
                                 {
-                                    Naluno = reader.GetInt32("idAlunos"),
+                                    Naluno = reader.GetInt32("idalunos"),
                                     PriNome = reader.GetString("nome"),
                                     UltNome = reader.GetString("ultimo_nome"),
                                     Morada = reader.GetString("morada"),
@@ -125,94 +112,83 @@ namespace WebMVC.Controllers
                                     AnoEscolaridade = reader.GetInt16("ano_escolaridade"),
                                     ImgPath = reader.GetString("foto")
                                 };
-                                return View(Aluno);
-
+                                return View(aluno);
                             }
                         }
-
                     }
-
-
-
-
-                }
-
-
-
 
             }
             return RedirectToAction("ListarAluno");
-
         }
 
         [HttpPost]
-
-        public ActionResult EditarAluno(aluno Aluno)
+        public ActionResult EditaAluno(aluno aluno)
         {
+            if (Session["Login"] == null) return RedirectToAction("Login", "Registo");
             if (ModelState.IsValid)
             {
                 bool img = false;
-                if (Aluno.imagem != null)
+                if (aluno.imagem != null)
                 {
-                    string ImagemNome = Path.GetFileNameWithoutExtension(Aluno.imagem.FileName);
-                    string ImagemExt = Path.GetExtension(Aluno.imagem.FileName);
+                    string ImagemNome = Path.GetFileNameWithoutExtension(aluno.imagem.FileName);
+                    string ImagemExt = Path.GetExtension(aluno.imagem.FileName);
 
-                    ImagemNome = DateTime.Now.ToString("yyyyMMddHHmmss") + "." + ImagemNome.Trim() + ImagemExt;
-                    Aluno.ImgPath = @"\Content\Imagens\" + ImagemNome;
+                    ImagemNome = DateTime.Now.ToString("yyyyMMddHHmmss") + "-" + ImagemNome.Trim() + ImagemExt;
+                    aluno.ImgPath = @"\Content\Imagens\" + ImagemNome;
 
-                    Aluno.imagem.SaveAs(ControllerContext.HttpContext.Server.MapPath(Aluno.ImgPath));
+                    aluno.imagem.SaveAs(ControllerContext.HttpContext.Server.MapPath(aluno.ImgPath));
                     img = true;
-
                 }
                 ConexaoBD conn = new ConexaoBD("localhost", 3307, "root", "root", "formacao");
-            using(MySqlConnection conexao = conn.ObterConexao())
+                using (MySqlConnection conexao = conn.ObterConexao())
                 {
-                    if(conexao != null)
+                    if (conexao != null)
                     {
                         string strFoto = (img) ? ",foto=@foto" : "";
-                        string stm = "update alunos set nome=@primeiroNome," + "ultimo_nome=@ultimoNome," + "morada=@morada," + "genero=@genero," + "datanasc=@dataNasc," + "ano_escolaridade=@ano" + strFoto + "where idalunos=@idAlunos";
+                        string stm = "update alunos set nome=@primeiroNome," + "ultimo_nome=@ultimoNome," +
+                        "morada=@morada," + "genero=@genero," + "datanasc=@dataNasc," + "ano_escolaridade=@ano" + strFoto + " where idalunos=@idAluno";
 
-                        using(MySqlCommand cmd = new MySqlCommand(stm, conexao))
+                        using (MySqlCommand cmd = new MySqlCommand(stm, conexao))
                         {
-                            cmd.Parameters.AddWithValue("@primeiroNome", Aluno.PriNome);
-                            cmd.Parameters.AddWithValue("@ultimoNome", Aluno.UltNome);
-                            cmd.Parameters.AddWithValue("@morada", Aluno.Morada);
-                            cmd.Parameters.AddWithValue("@genero", Aluno.Genero);
-                            cmd.Parameters.AddWithValue("@dataNasc", Aluno.DataNasc);
-                            cmd.Parameters.AddWithValue("@ano", Aluno.AnoEscolaridade);
-                            cmd.Parameters.AddWithValue("@idAluno", Aluno.Naluno);
-                            if (img)
-                            {
-                                cmd.Parameters.AddWithValue("@foto", Aluno.ImgPath);
+                            cmd.Parameters.AddWithValue("@primeiroNome", aluno.PriNome);
+                            cmd.Parameters.AddWithValue("@ultimoNome", aluno.UltNome);
+                            cmd.Parameters.AddWithValue("@morada", aluno.Morada);
+                            cmd.Parameters.AddWithValue("@genero", aluno.Genero.ToString());
+                            cmd.Parameters.AddWithValue("@dataNasc", aluno.DataNasc);
+                            cmd.Parameters.AddWithValue("@ano", aluno.AnoEscolaridade);
+                            cmd.Parameters.AddWithValue("@idAluno", aluno.Naluno);
 
-                            }
-                            int nRegistos = cmd.ExecuteNonQuery();
+                            if (img)
+                                cmd.Parameters.AddWithValue("@foto", aluno.ImgPath);
+
+                            int nRgistos = cmd.ExecuteNonQuery();
+
+
                         }
                     }
-
-
                 }
             }
             return RedirectToAction("ListarAluno");
         }
         public ActionResult EditaAluno(int? id)
         {
+            if (Session["Login"] == null) return RedirectToAction("Login", "Registo");
             ConexaoBD Conn = new ConexaoBD("localhost", 3307, "root", "root", "formacao");
-            aluno Aluno = null;
+            aluno aluno = null;
             using (MySqlConnection conexao = Conn.ObterConexao())
             {
                 if (conexao != null)
-                {
-                    using (MySqlCommand cmd = new MySqlCommand("select*from alunos where idalunos=@idalunos", conexao))
+                    using (MySqlCommand cmd = new MySqlCommand("select * from alunos where idalunos=@idaluno", conexao))
                     {
-                        cmd.Parameters.AddWithValue("@idalunos", id);
+                        cmd.Parameters.AddWithValue("@idaluno", id);
                         using (MySqlDataReader reader = cmd.ExecuteReader())
                         {
                             if (reader.Read())
                             {
-                                Aluno = new aluno()
+
+                                aluno = new aluno()
                                 {
-                                    Naluno = reader.GetInt32("idAlunos"),
+                                    Naluno = reader.GetInt32("idalunos"),
                                     PriNome = reader.GetString("nome"),
                                     UltNome = reader.GetString("ultimo_nome"),
                                     Morada = reader.GetString("morada"),
@@ -221,34 +197,35 @@ namespace WebMVC.Controllers
                                     AnoEscolaridade = reader.GetInt16("ano_escolaridade"),
                                     ImgPath = reader.GetString("foto")
                                 };
-                                return View(Aluno);
-
+                                return View(aluno);
                             }
                         }
                     }
-                }
+
             }
-            return RedirectToAction("EditaAluno");
+            return RedirectToAction("ListarAluno");
         }
 
         public ActionResult EliminaAluno(int? id)
         {
+            if (Session["Login"] == null) return RedirectToAction("Login", "Registo");
             ConexaoBD Conn = new ConexaoBD("localhost", 3307, "root", "root", "formacao");
-            aluno Aluno = null;
+            aluno aluno = null;
+
             using (MySqlConnection conexao = Conn.ObterConexao())
             {
                 if (conexao != null)
-                {
-                    using (MySqlCommand cmd = new MySqlCommand("select*from alunos where idalunos=@idalunos", conexao))
+                    using (MySqlCommand cmd = new MySqlCommand("select * from alunos where idalunos=@idaluno", conexao))
                     {
-                        cmd.Parameters.AddWithValue("@idalunos", id);
+                        cmd.Parameters.AddWithValue("@idaluno", id);
                         using (MySqlDataReader reader = cmd.ExecuteReader())
                         {
                             if (reader.Read())
                             {
-                                Aluno = new aluno()
+
+                                aluno = new aluno()
                                 {
-                                    Naluno = reader.GetInt32("idAlunos"),
+                                    Naluno = reader.GetInt32("idalunos"),
                                     PriNome = reader.GetString("nome"),
                                     UltNome = reader.GetString("ultimo_nome"),
                                     Morada = reader.GetString("morada"),
@@ -256,58 +233,45 @@ namespace WebMVC.Controllers
                                     DataNasc = reader.GetDateTime("datanasc"),
                                     AnoEscolaridade = reader.GetInt16("ano_escolaridade"),
                                     ImgPath = reader.GetString("foto")
-       
-                                };                             
-
-                                TempData["ImagemPath"] = Aluno.ImgPath;
-
-                                return View(Aluno);
+                                };
+                                TempData["ImagemPath"] = aluno.ImgPath;
+                                return View(aluno);
 
                             }
                         }
-
                     }
-
-
-
-
-                }
-
-
-
-
-            }
-            return RedirectToAction("EliminaAluno");
-
-
-        }
-        [HttpPost, ActionName("EliminaAluno")]
-        public ActionResult EliminaAlunoConfirmacao(int? id)
-        {
-            ConexaoBD conn = new ConexaoBD("localhost", 3307, "root", "root", "formacao");
-
-            using(MySqlConnection conexao = conn.ObterConexao())
-            {
-                if(conexao != null)
-                {
-                    string stm = "delete from alunos where idalunos=@idAluno";
-
-                    using (MySqlCommand cmd = new MySqlCommand(stm, conexao))
-                    {
-                        cmd.Parameters.AddWithValue("@idAluno", id);
-                        int nRgistos = cmd.ExecuteNonQuery();
-                        if(nRgistos == 1)
-                        {
-                            new FileInfo(ControllerContext.HttpContext.Server.MapPath(TempData["ImagemPath"].ToString())).Delete();
-                        }
-                    }
-
-                }
 
             }
             return RedirectToAction("ListarAluno");
         }
 
+        [HttpPost, ActionName("EliminaAluno")]
+        public ActionResult EliminaAlunoConfirmacao(int? id)
+        {
+            if (Session["Login"] == null) return RedirectToAction("Login", "Registo");
+            ConexaoBD conn = new ConexaoBD("localhost", 3307, "root", "root", "formacao");
+
+            using (MySqlConnection conexao = conn.ObterConexao())
+            {
+                if (conexao != null)
+                {
+                    string stm = "delete from alunos where idalunos = @idAluno";
+
+                    using (MySqlCommand cmd = new MySqlCommand(stm, conexao))
+                    {
+                        cmd.Parameters.AddWithValue("@idAluno", id);
+                        int nRgistos = cmd.ExecuteNonQuery();
+
+                        if (nRgistos == 1)
+                        {
+                            new FileInfo(ControllerContext.HttpContext.Server.MapPath(TempData["ImagemPath"].ToString())).Delete();
+                        }
+                    }
+                }
+            }
+            return RedirectToAction("ListarAluno");
+        }
+
+
     }
-    
 }

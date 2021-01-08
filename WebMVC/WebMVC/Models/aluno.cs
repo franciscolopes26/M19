@@ -27,7 +27,7 @@ namespace WebMVC.Models
         [Required]
         [Display(Name = "Data de nascimento")]
         [DataType(DataType.Date)]
-        [DisplayFormat(DataFormatString ="{0:yyyy-mm-dd}",ApplyFormatInEditMode =true)]
+        [DisplayFormat(DataFormatString ="{0:yyyy-MM-dd}",ApplyFormatInEditMode =true)]
         public DateTime DataNasc { get; set; }
         [Required]
         [Display(Name = "Ano de escolaridade")]
